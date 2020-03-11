@@ -1,5 +1,7 @@
 library(shiny)
 library(bs4Dash)
+library(vroom)
+library(lubridate)
 
 
 ###################################################################
@@ -22,7 +24,7 @@ sidebar <- bs4DashSidebar(
     bs4SidebarMenu(
         bs4SidebarHeader("Exploratory Analysis"),
         bs4SidebarMenuItem("Time Series Visualization", tabName = "ExploratoryAnalysis_SimpleViz", icon = "sliders"),
-        bs4SidebarMenuItem("", tabName = "item2", icon = "sliders"),
+        bs4SidebarMenuItem("Seasonality", tabName = "ExploratoryAnalysis_Seasonality", icon = "sliders"),
         bs4SidebarHeader("Feature Engineering"),
         bs4SidebarHeader("Modelling"),
         bs4SidebarMenuItem("Univariate", tabName = "item1", icon = "sliders"),
@@ -45,7 +47,33 @@ footer <- bs4DashFooter(
 )
 
 
-body <- bs4DashBody()
+body <- bs4DashBody(
+    bs4TabItems(
+        bs4TabItem(
+            tabName = "ExploratoryAnalysis_SimpleViz",
+            fluidRow(
+                bs4InfoBox(title = "Number of rows", width = 4, value = 100),
+                bs4InfoBox(title = "Numbebr of columns", width = 4, value = 12),
+                bs4InfoBox(title = "Dataset Size", width = 4, value = "10Mb")
+            ),
+            fluidRow(
+                bs4Card(
+                    width = 4, title = "Configuration", closable = FALSE, solidHeader = TRUE, maximizable = FALSE,
+                    selectizeInput("ExploratoryAnalysis_SimpleViz_Input_Column", label = "Select Features", multiple = TRUE, choices = c()),
+                    selectizeInput("ExploratoryAnalysis_SimpleViz_Input_Granularity", label = "Select Granularity", multiple = FALSE, choices = c("Hourly", "Monthly", "Yearly")),
+                    dateRangeInput("ExploratoryAnalysis_SimpleViz_Input_DateRange", label = "Select Date Range", autoclose = TRUE)
+                ),
+                bs4Card(
+                    width = 8, title = "Plots", closable = FALSE, solidHeader = TRUE, maximizable = TRUE,
+                    plotOutput("ExploratoryAnalysis_SimpleViz_Output_Plots")
+                )
+            )
+        ),
+        bs4TabItem(
+            tabName = "ExploratoryAnalysis_Seasonality"
+        )
+    )
+)
 
 
 
@@ -67,7 +95,14 @@ ui <- bs4DashPage(
 ###################################################################
 ################             SERVER                ################
 ###################################################################
-server <- function(input, output) {}
+server <- function(input, output, session) {
+    solar_data <- vroom(file = "../data/solar_data.csv")
+    solar_data$date_time <- ymd_hms(solar_data$date_time)
+    
+    updateSelectizeInput(session, "ExploratoryAnalysis_SimpleViz_Input_Column", choices = names(solar_data))
+    updateDateRangeInput(session, "ExploratoryAnalysis_SimpleViz_Input_DateRange", start = min(solar_data$date_time), end = max(solar_data$date_time))
+    
+}
 
 
 
