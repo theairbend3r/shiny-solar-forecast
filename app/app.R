@@ -1,40 +1,81 @@
 library(shiny)
+library(bs4Dash)
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
 
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
+###################################################################
+################                 UI                ################
+###################################################################
 
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
+sidebar <- bs4DashSidebar(
+    skin = "light",
+    status = "primary",
+    title = "Solar Forecast",
+    brandColor = "primary",
+    url = "https://akshajverma.com",
+    src = "https://akshajverma.com/images/akshaj_profile.jpg",
+    elevation = 3,
+    opacity = 0.8,
+    bs4SidebarUserPanel(
+        img = "https://image.flaticon.com/icons/svg/1149/1149168.svg",
+        text = "About"
+    ),
+    bs4SidebarMenu(
+        bs4SidebarHeader("Exploratory Analysis"),
+        bs4SidebarMenuItem("Time Series Visualization", tabName = "ExploratoryAnalysis_SimpleViz", icon = "sliders"),
+        bs4SidebarMenuItem("", tabName = "item2", icon = "sliders"),
+        bs4SidebarHeader("Feature Engineering"),
+        bs4SidebarHeader("Modelling"),
+        bs4SidebarMenuItem("Univariate", tabName = "item1", icon = "sliders"),
+        bs4SidebarMenuItem("Multivariate", tabName = "item2", icon = "sliders")
     )
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
 
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    })
-}
+navbar <- bs4DashNavbar()
 
-# Run the application 
-shinyApp(ui = ui, server = server)
+# controlbar <- bs4DashControlbar()
+
+footer <- bs4DashFooter(
+    copyrights = a(
+        href = "https://twitter.com/theairbend3r", 
+        target = "_blank", "@theairbend3r"
+    ),
+    right_text = "2020"
+)
+
+
+body <- bs4DashBody()
+
+
+
+ui <- bs4DashPage(
+    old_school = FALSE,
+    sidebar_min = TRUE,
+    sidebar_collapsed = FALSE,
+    controlbar_collapsed = FALSE,
+    controlbar_overlay = TRUE,
+    title = "Solar Forecast",
+    navbar = navbar,
+    sidebar = sidebar,
+    # controlbar = controlbar,
+    footer = footer,
+    body = body
+)
+
+
+###################################################################
+################             SERVER                ################
+###################################################################
+server <- function(input, output) {}
+
+
+
+
+###################################################################
+################              PAGE                 ################
+###################################################################
+shiny::shinyApp(
+    ui = ui,
+    server = server
+)
