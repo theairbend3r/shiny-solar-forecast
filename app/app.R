@@ -2,6 +2,13 @@ library(shiny)
 library(bs4Dash)
 library(vroom)
 library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(shinycssloaders)
+library(tsibble)
+
+
+source("functions/function_eda_preprocess.R")
 
 
 ###################################################################
@@ -59,13 +66,13 @@ body <- bs4DashBody(
             fluidRow(
                 bs4Card(
                     width = 4, title = "Configuration", closable = FALSE, solidHeader = TRUE, maximizable = FALSE,
-                    selectizeInput("ExploratoryAnalysis_SimpleViz_Input_Column", label = "Select Features", multiple = TRUE, choices = c()),
-                    selectizeInput("ExploratoryAnalysis_SimpleViz_Input_Granularity", label = "Select Granularity", multiple = FALSE, choices = c("Hourly", "Monthly", "Yearly")),
+                    selectizeInput("ExploratoryAnalysis_SimpleViz_Input_Column", label = "Select Features", multiple = FALSE, choices = c()),
+                    selectizeInput("ExploratoryAnalysis_SimpleViz_Input_Granularity", label = "Select Granularity", multiple = FALSE, selected = "Monthly", choices = c("Hourly", "Daily", "Monthly", "Yearly")),
                     dateRangeInput("ExploratoryAnalysis_SimpleViz_Input_DateRange", label = "Select Date Range", autoclose = TRUE)
                 ),
                 bs4Card(
                     width = 8, title = "Plots", closable = FALSE, solidHeader = TRUE, maximizable = TRUE,
-                    plotOutput("ExploratoryAnalysis_SimpleViz_Output_Plots")
+                    withSpinner(plotOutput("ExploratoryAnalysis_SimpleViz_Output_Plots"))
                 )
             )
         ),
@@ -96,12 +103,31 @@ ui <- bs4DashPage(
 ################             SERVER                ################
 ###################################################################
 server <- function(input, output, session) {
-    solar_data <- vroom(file = "../data/solar_data.csv")
-    solar_data$date_time <- ymd_hms(solar_data$date_time)
+    solar_df <- vroom(file = "../data/solar_data.csv", delim = ",", progress = TRUE)
+    solar_df$date_time <- ymd_hms(solar_df$date_time)
+
+
+    updateSelectizeInput(session, "ExploratoryAnalysis_SimpleViz_Input_Column", choices = names(solar_df))
+    updateDateRangeInput(session, "ExploratoryAnalysis_SimpleViz_Input_DateRange", start = min(solar_df$date_time), end = max(solar_df$date_time))
     
-    updateSelectizeInput(session, "ExploratoryAnalysis_SimpleViz_Input_Column", choices = names(solar_data))
-    updateDateRangeInput(session, "ExploratoryAnalysis_SimpleViz_Input_DateRange", start = min(solar_data$date_time), end = max(solar_data$date_time))
     
+    plotTimeSeriesCols <- function(df, col_name) {
+        col_name <- enquo(col_name)
+        
+        df %>%
+            ggplot(mapping = aes(x = date_time, y = !! col_name))
+    }
+    
+    output$ExploratoryAnalysis_SimpleViz_Output_Plots <- renderPlot({
+        df <- preprocessEDA(df = solar_df,
+                            granularity = input$ExploratoryAnalysis_SimpleViz_Input_Granularity,
+                            date_start = input$ExploratoryAnalysis_SimpleViz_Input_DateRange[1],
+                            date_end = input$ExploratoryAnalysis_SimpleViz_Input_DateRange[2]
+                            )
+        df %>%
+            ggplot(mapping = aes(x = date_time, y = .data[[input$ExploratoryAnalysis_SimpleViz_Input_Column]])) + geom_line()
+        # plotTimeSeriesCols(solar_df, col_name = input$ExploratoryAnalysis_SimpleViz_Input_Column)
+    })   
 }
 
 

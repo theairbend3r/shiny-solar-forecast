@@ -1,0 +1,47 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tsibble)
+library(vroom )
+library(feasts)
+```
+
+```{r}
+solar_df <- vroom(file = "data/solar_data.csv", delim = ",", progress = TRUE)
+# solar_df <- read.csv("data/solar_data.csv")
+solar_df$date_time <- date(solar_df$date_time)
+solar_df <- solar_df %>% mutate(id = row_number())
+# solar_tsbl <- as_tsibble(solar_df, index = date_time, key = id)
+```
+
+```{r}
+plotTimeSeriesCols <- function(df, col_name, granularity) {
+  
+  col_name <- enquo(col_name)
+
+  tsbl <- df %>% 
+    select(c(date_time, id, !! col_name)) %>%
+    
+    # as_tsibble(index = date_time, key = id)
+  
+  tsbl
+  
+  # tsbl %>%
+  #   index_by(yearly = year(date_time)) %>%
+  #     summarise(lol = mean({{col_vector}}))
+      # ggplot(mapping = aes(x = date_time, y = {{col_vector}})) + geom_line()
+}
+
+plotTimeSeriesCols(solar_df, col_name = "se")
+```
+
+```{r}
+solar_tsbl %>%
+  index_by(yearly = year(date_time)) %>%
+  summarise(irradiance = mean(irradiance), se = mean(se)) %>%
+  ggplot(mapping = aes(x = yearly, y = irradiance)) + geom_line()
+```
+
