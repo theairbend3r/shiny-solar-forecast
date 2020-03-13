@@ -14,7 +14,7 @@ solar_df <- vroom(file = "data/solar_data.csv", delim = ",", progress = TRUE)
 # solar_df <- read.csv("data/solar_data.csv")
 solar_df$date_time <- date(solar_df$date_time)
 solar_df <- solar_df %>% mutate(id = row_number())
-# solar_tsbl <- as_tsibble(solar_df, index = date_time, key = id)
+solar_tsbl <- as_tsibble(solar_df, index = date_time, key = id)
 ```
 
 ```{r}
@@ -39,9 +39,9 @@ plotTimeSeriesCols(solar_df, col_name = "se")
 ```
 
 ```{r}
-solar_tsbl %>%
-  index_by(yearly = year(date_time)) %>%
-  summarise(irradiance = mean(irradiance), se = mean(se)) %>%
-  ggplot(mapping = aes(x = yearly, y = irradiance)) + geom_line()
+solar_tsbl %>% gg_subseries(irradiance, period = "year")
+  # index_by(yearly = year(date_time)) %>%
+  # summarise(irradiance = mean(irradiance), se = mean(se)) %>%
+  # ggplot(mapping = aes(x = yearly, y = irradiance)) + geom_line()
 ```
 

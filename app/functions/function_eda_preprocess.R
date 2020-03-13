@@ -9,9 +9,8 @@ preprocessEDA <- function(df, granularity ="Monthly", date_start, date_end) {
     filter(date_time >= date(date_start), date_time <= date(date_end)) %>%
     group_by(date_time = floor_date(date_time, gran)) %>%
     summarise_all(mean)
-  # mutate_all(vars(-date_time), round(2))
   
   print(df)
-  
+
   return (df)
 }
