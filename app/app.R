@@ -107,7 +107,7 @@ body <- bs4DashBody(
                 bs4Card(
                     width = 4, title = "Train Configuration", closable = FALSE, solidHeader = TRUE, maximizable = FALSE,
                     selectizeInput("Forecast_Univariate_Input_TargetVariable", label = "Select Target", multiple = FALSE, choices = c(" ")),
-                    selectizeInput("Forecast_Univariate_Input_Model", label = "Select Model", multiple = FALSE, selected = "Average", choices = c("Average", "Naive", "Seasonal Naive", "Drift")),
+                    selectizeInput("Forecast_Univariate_Input_Model", label = "Select Model", multiple = FALSE, selected = "Average", choices = c("Average", "Naive", "Seasonal Naive")),
                     dateRangeInput("Forecast_Univariate_Input_TrainDateRange", label = "Select Train Subset", autoclose = TRUE),
                     dateRangeInput("Forecast_Univariate_Input_TestDateRange", label = "Select Test Subset", autoclose = TRUE),
                     
@@ -121,7 +121,7 @@ body <- bs4DashBody(
                 bs4TabCard(
                     id = "forecastOutput", width = 8, title = "Forecast Output", closable = FALSE, solidHeader = TRUE, maximizable  = TRUE,
                     bs4TabPanel(tabName = "Plot", active = TRUE, addSpinner(plotOutput("Forecast_Univariate_Train_Output_Plots"))),
-                    bs4TabPanel(tabName = "Dataframe", active = FALSE, addSpinner(dataTableOutput("Forecast_Univariate_Train_Output_DF")))
+                    bs4TabPanel(tabName = "Dataframe", active = FALSE, dataTableOutput("Forecast_Univariate_Train_Output_DF"))
                 )
             ),
             fluidRow(
@@ -154,9 +154,10 @@ ui <- bs4DashPage(
 ################             SERVER                ################
 ###################################################################
 server <- function(input, output, session) {
-    solar_df <- vroom(file = "../data/solar_data.csv", delim = ",", progress = TRUE)
-    solar_df$date_time <- ymd_hms(solar_df$date_time)
-
+    # solar_df <- vroom(file = "../data/solar_data.csv", delim = ",", progress = TRUE)
+    # solar_df$date_time <- ymd_hms(solar_df$date_time)
+    
+    solar_tsbl <- reactive({ readRDS("../solar_tsbl.rds") })
     
     #=============================================================
     #                 EXPLORATORY DATA ANALYSIS
@@ -205,11 +206,11 @@ server <- function(input, output, session) {
     updateDateRangeInput(session, "Forecast_Univariate_Input_TrainDateRange", start = min(solar_df$date_time), end = max(solar_df$date_time))
     
     
-    solar_tsbl <- reactive({
-        print("COVNERTING DF TO TSBL...")
-        solar_df %>%
-            as_tsibble(index = date_time, key = id)
-    })
+    # solar_tsbl <- reactive({
+    #     print("COVNERTING DF TO TSBL...")
+    #     solar_df %>%
+    #         as_tsibble(index = date_time, key = id)
+    # })
     
     subset_grouped_solar_tsbl <- reactive({
         print("SUBSETTING TSBL")
@@ -225,40 +226,54 @@ server <- function(input, output, session) {
     })
     
     
-    trained_model <- eventReactive(input$Forecast_Univariate_Button_Train, {
+    forecast_model <- eventReactive(input$Forecast_Univariate_Button_Train, {
         print("Training the model1!!!!!")
         target_col <- input$Forecast_Univariate_Input_TargetVariable
+        forecast_horizon <- input$Forecast_Univariate_Input_ForecastHorizon
         print(target_col)
         
         if (input$Forecast_Univariate_Input_Model == "Average") model <- subset_grouped_solar_tsbl() %>% model(model_mean = MEAN(!! sym(target_col)))
         if (input$Forecast_Univariate_Input_Model == "Naive") model <- subset_grouped_solar_tsbl() %>% model(model_naive = NAIVE(!! sym(target_col)))
         if (input$Forecast_Univariate_Input_Model == "Seasonal Naive") model <- subset_grouped_solar_tsbl() %>% model(model_seasonalnaive = SNAIVE(!! sym(target_col)))
-        if (input$Forecast_Univariate_Input_Model == "DRIFT") model <- subset_grouped_solar_tsbl() %>% model(model_drift = (!! sym(target_col)))
         
         print("RETURNING THE TRAINED model!!!")
-        return (model)
+        
+        forecast_data <- model %>%
+            forecast(h = forecast_horizon)
+        
+        
+        out <- list(
+            trained_model = model,
+            forecast_data = forecast_data
+        )
     })
     
     
     
     output$Forecast_Univariate_Output_Accuracy <- renderDataTable({
-        req(trained_model())
-        trained_model() %>% accuracy()
+        req(forecast_model())
+        forecast_model()$trained_model %>% accuracy()
     }, options = list(scrollX = TRUE, pageLength = 5))
 
     
     output$Forecast_Univariate_Output_Report <- renderDataTable({
-        req(trained_model())
-        trained_model() %>% augment()
+        req(forecast_model())
+        forecast_model()$trained_model %>% augment()
     }, options = list(scrollX = TRUE, pageLength = 5))
     
     
     output$Forecast_Univariate_Train_Output_Plots <- renderPlot({
-        trained_model() %>%
-            forecast(h = 5) %>%
-            autoplot(subset_grouped_solar_tsbl())
+        req(forecast_model())
+        forecast_model()$forecast_data %>%
+            autoplot()
 
     })
+    
+    output$Forecast_Univariate_Train_Output_DF <- renderDataTable({
+        req(forecast_model())
+        forecast_model()$forecast_data
+    }, options = list(scrollX = TRUE, pageLength = 5))
+    
     
 }
 

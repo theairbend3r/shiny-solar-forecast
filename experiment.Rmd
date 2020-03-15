@@ -21,7 +21,7 @@ solar_tsbl <- as_tsibble(solar_df, index = date_time, key = id)
 ```
 
 ```{r}
-sym(var)
+saveRDS(solar_tsbl, "solar_tsbl.rds")
 ```
 
 
