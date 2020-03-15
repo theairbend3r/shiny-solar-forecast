@@ -108,14 +108,13 @@ body <- bs4DashBody(
                     width = 4, title = "Train Configuration", closable = FALSE, solidHeader = TRUE, maximizable = FALSE,
                     selectizeInput("Forecast_Univariate_Input_TargetVariable", label = "Select Target", multiple = FALSE, choices = c(" ")),
                     selectizeInput("Forecast_Univariate_Input_Model", label = "Select Model", multiple = FALSE, selected = "Average", choices = c("Average", "Naive", "Seasonal Naive")),
+                    selectInput("Forecast_Univariate_Input_ForecastGranularity", "Granularity", choices = c("Day", "Month", "Year")),
+                    numericInput("Forecast_Univariate_Input_ForecastHorizon", "Forecast Horizon", value = 12, min = 0),
                     dateRangeInput("Forecast_Univariate_Input_TrainDateRange", label = "Select Train Subset", autoclose = TRUE),
                     dateRangeInput("Forecast_Univariate_Input_TestDateRange", label = "Select Test Subset", autoclose = TRUE),
                     
                     # dateRangeInput2("Forecast_Univariate_Input_TrainDateRange", "Select Train Subset", startview = "year", minview = "months", maxview = "decades"),
                     # dateRangeInput2("Forecast_Univariate_Input_TestDateRange", "Select Test Subset", startview = "year", minview = "months", maxview = "decades"),
-
-                    selectInput("Forecast_Univariate_Input_ForecastGranularity", "Granularity", choices = c("Day", "Month", "Year")),
-                    numericInput("Forecast_Univariate_Input_ForecastHorizon", "Forecast Horizon", value = 12, min = 0),
                     actionButton("Forecast_Univariate_Button_Train", label = "Run")
                 ),
                 bs4TabCard(
