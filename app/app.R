@@ -156,6 +156,7 @@ server <- function(input, output, session) {
     # solar_df <- vroom(file = "../data/solar_data.csv", delim = ",", progress = TRUE)
     # solar_df$date_time <- ymd_hms(solar_df$date_time)
     
+    solar_df <- readRDS("../solar_df.rds")
     solar_tsbl <- reactive({ readRDS("../solar_tsbl.rds") })
     
     #=============================================================
@@ -218,8 +219,8 @@ server <- function(input, output, session) {
             filter_index(as.character(input$Forecast_Univariate_Input_TrainDateRange[1]) ~ as.character(input$Forecast_Univariate_Input_TrainDateRange[2]))
         
         if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") gs_tsbl<- subset_tsbl %>% index_by(day = as.Date(date_time)) %>% summarise_all(mean)
-        if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") gs_tsbl <- subset_tsbl %>% index_by(month <- yearmonth(date_time)) %>% summarise_all(mean)
-        if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") gs_tsbl <- subset_tsbl %>% index_by(year <- year(date_time)) %>% summarise_all(mean)
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") gs_tsbl <- subset_tsbl %>% index_by(month = yearmonth(date_time)) %>% summarise_all(mean)
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") gs_tsbl <- subset_tsbl %>% index_by(year = year(date_time)) %>% summarise_all(mean)
 
         return (gs_tsbl)
     })
