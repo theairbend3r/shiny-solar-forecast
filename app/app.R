@@ -18,7 +18,7 @@ library(fable)
 # library(promises)
 # 
 # plan(multisession)
-
+theme_set(theme_light())
 
 source("functions/function_eda_preprocess.R")
 source("functions/function_mmyyyy_dateinput.R")
@@ -124,8 +124,8 @@ body <- bs4DashBody(
                 )
             ),
             fluidRow(
-                bs4Card(width = 4, title = "Accuracy", closable = FALSE, solidHeader = TRUE, maximizable = FALSE, DTOutput("Forecast_Univariate_Output_Accuracy")),
-                bs4Card(width = 8, title = "Report", closable = FALSE, solidHeader = TRUE, maximizable = FALSE, DTOutput("Forecast_Univariate_Output_Report"))
+                bs4Card(width = 5, title = "Accuracy", closable = FALSE, solidHeader = TRUE, maximizable = FALSE, DTOutput("Forecast_Univariate_Output_Accuracy")),
+                bs4Card(width = 7, title = "Report", closable = FALSE, solidHeader = TRUE, maximizable = FALSE, DTOutput("Forecast_Univariate_Output_Report"))
             )
 
         )
@@ -141,7 +141,7 @@ ui <- bs4DashPage(
     controlbar_collapsed = FALSE,
     controlbar_overlay = TRUE,
     title = "Solar Forecast",
-    # navbar = navbar,
+    navbar = navbar,
     sidebar = sidebar,
     # controlbar = controlbar,
     footer = footer,
@@ -218,13 +218,35 @@ server <- function(input, output, session) {
         subset_tsbl <- solar_tsbl() %>%
             filter_index(as.character(input$Forecast_Univariate_Input_TrainDateRange[1]) ~ as.character(input$Forecast_Univariate_Input_TrainDateRange[2]))
         
-        if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") gs_tsbl<- subset_tsbl %>% index_by(day = as.Date(date_time)) %>% summarise_all(mean)
-        if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") gs_tsbl <- subset_tsbl %>% index_by(month = yearmonth(date_time)) %>% summarise_all(mean)
-        if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") gs_tsbl <- subset_tsbl %>% index_by(year = year(date_time)) %>% summarise_all(mean)
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") gs_tsbl<- subset_tsbl %>% index_by(datetime_day = as.Date(date_time)) %>% summarise_all(mean)
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") gs_tsbl <- subset_tsbl %>% index_by(datetime_month = yearmonth(date_time)) %>% summarise_all(mean)
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") gs_tsbl <- subset_tsbl %>% index_by(datetime_year = year(date_time)) %>% summarise_all(mean)
 
         return (gs_tsbl)
     })
     
+    
+    train_subset_grouped_solar_tsbl <- reactive({
+        
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") {
+            train_set <- subset_grouped_solar_tsbl() %>%
+                filter(datetime_day >= input$Forecast_Univariate_Input_TrainDateRange[1]) %>% 
+                filter(datetime_day < input$Forecast_Univariate_Input_TrainDateRange[2]) 
+        } else if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") {
+            train_set <- subset_grouped_solar_tsbl() %>%
+                filter(datetime_month >= input$Forecast_Univariate_Input_TrainDateRange[1]) %>% 
+                filter(datetime_month < input$Forecast_Univariate_Input_TrainDateRange[2]) 
+        } else if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") {
+            train_set <- subset_grouped_solar_tsbl() %>%
+                filter(datetime_year >= input$Forecast_Univariate_Input_TrainDateRange[1]) %>% 
+                filter(datetime_year < input$Forecast_Univariate_Input_TrainDateRange[2]) 
+        } else {
+            stop("Invalid date time argument in univariate forecasting.")
+        }
+        
+        return (train_set)
+
+    })
     
     forecast_model <- eventReactive(input$Forecast_Univariate_Button_Train, {
         print("Training the model1!!!!!")
@@ -232,9 +254,9 @@ server <- function(input, output, session) {
         forecast_horizon <- input$Forecast_Univariate_Input_ForecastHorizon
         print(target_col)
         
-        if (input$Forecast_Univariate_Input_Model == "Average") model <- subset_grouped_solar_tsbl() %>% model(model_mean = MEAN(!! sym(target_col)))
-        if (input$Forecast_Univariate_Input_Model == "Naive") model <- subset_grouped_solar_tsbl() %>% model(model_naive = NAIVE(!! sym(target_col)))
-        if (input$Forecast_Univariate_Input_Model == "Seasonal Naive") model <- subset_grouped_solar_tsbl() %>% model(model_seasonalnaive = SNAIVE(!! sym(target_col)))
+        if (input$Forecast_Univariate_Input_Model == "Average") model <- train_subset_grouped_solar_tsbl() %>% model(model_mean = MEAN(!! sym(target_col)))
+        if (input$Forecast_Univariate_Input_Model == "Naive") model <- train_subset_grouped_solar_tsbl() %>% model(model_naive = NAIVE(!! sym(target_col)))
+        if (input$Forecast_Univariate_Input_Model == "Seasonal Naive") model <- train_subset_grouped_solar_tsbl() %>% model(model_seasonalnaive = SNAIVE(!! sym(target_col)))
         
         print("RETURNING THE TRAINED model!!!")
         
@@ -252,7 +274,10 @@ server <- function(input, output, session) {
     
     output$Forecast_Univariate_Output_Accuracy <- renderDataTable({
         req(forecast_model())
-        forecast_model()$trained_model %>% accuracy()
+        train_acc <- accuracy(forecast_model()$trained_model)
+        test_acc <- accuracy(forecast_model()$forecast_data, subset_grouped_solar_tsbl())
+        
+        bind_rows(train_acc, test_acc)
     }, options = list(scrollX = TRUE, pageLength = 5))
 
     

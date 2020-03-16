@@ -17,21 +17,35 @@ solar_df <- vroom(file = "data/solar_data.csv", delim = ",", progress = TRUE)
 # solar_df <- read.csv("data/solar_data.csv")
 solar_df$date_time <- date(solar_df$date_time)
 solar_df <- solar_df %>% mutate(id = row_number())
-# solar_tsbl <- as_tsibble(solar_df, index = date_time, key = id)
+solar_tsbl <- as_tsibble(solar_df, index = date_time, key = id)
 ```
 
 ```{r}
-saveRDS(solar_df, "solar_df.rds")
+# saveRDS(solar_df, "solar_df.rds")
 ```
 
+```{r}
+total <- solar_tsbl %>% 
+  index_by(years = year(date_time)) %>%
+  summarise_all(mean) 
+
+
+total
+```
 
 ```{r}
 var <- "irradiance"
 
-solar_tsbl %>% 
-  index_by(year = yearmonth(date_time)) %>%
-  summarise_all(mean) %>%
-  model(me = MEAN(!!sym(var))) %>%
-  augment()
+train <- total %>% 
+  filter(years <= 2010) 
+
+mod <- train %>%
+  model(lol = NAIVE(!!sym(var)))
+
+fc <- mod %>% forecast(h = 3)
+
+accuracy(fc, total)
+accuracy(mod)
+bind_rows(accuracy(mod), accuracy(fc, total))
 ```
 
