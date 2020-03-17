@@ -82,7 +82,8 @@ body <- bs4DashBody(
                 h2("Solar Forecast"),
                 p("Exploration and Univariate Prediction of Solar Irradiance using Statistical Time Series Methods."),
                 p("The data was taken from a Solar Farm."),
-                div(img(src="solar_panel.jpg", width = "100%"))
+                div(img(src="solar_panel.jpg", width = "100%")),
+                p("Photo by American Public Power Association on Unsplash")
             )
          ),
          bs4TabItem(

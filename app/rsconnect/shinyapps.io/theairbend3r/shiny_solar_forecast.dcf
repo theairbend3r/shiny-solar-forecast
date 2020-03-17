@@ -1,0 +1,12 @@
+name: shiny_solar_forecast
+title: shiny_solar_forecast
+username:
+account: theairbend3r
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1957206
+bundleId: 2889367
+url: https://theairbend3r.shinyapps.io/shiny_solar_forecast/
+when: 1584430112.67782
+asMultiple: FALSE
+asStatic: FALSE
