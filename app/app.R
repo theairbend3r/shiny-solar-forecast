@@ -28,7 +28,7 @@ source("functions/function_mmyyyy_dateinput.R")
 ###################################################################
 
 sidebar <- bs4DashSidebar(
-    skin = "light",
+    skin = "dark",
     status = "primary",
     title = "Solar Forecast",
     brandColor = "primary",
@@ -36,18 +36,15 @@ sidebar <- bs4DashSidebar(
     src = "https://akshajverma.com/images/akshaj_profile.jpg",
     elevation = 3,
     opacity = 0.8,
-    bs4SidebarUserPanel(
-        img = "https://image.flaticon.com/icons/svg/1149/1149168.svg",
-        text = "About"
-    ),
+    # bs4SidebarUserPanel(
+    #     img = "https://image.flaticon.com/icons/svg/1149/1149168.svg",
+    #     # url = "https://github.com/theairbend3r/shiny-solar-forecast",
+    #     text = "About"
+    # ),
     bs4SidebarMenu(
-        bs4SidebarHeader("Exploratory Analysis"),
-        bs4SidebarMenuItem("Time Series Visualization", tabName = "ExploratoryAnalysis_SimpleViz", icon = "sliders"),
-        bs4SidebarMenuItem("Seasonality", tabName = "ExploratoryAnalysis_Seasonality", icon = "sliders"),
-        bs4SidebarHeader("Feature Engineering"),
-        bs4SidebarHeader("Forecast"),
-        bs4SidebarMenuItem("Univariate", tabName = "Forecast_Univariate", icon = "sliders"),
-        bs4SidebarMenuItem("Multivariate", tabName = "Forecast_Multivariate", icon = "sliders")
+        bs4SidebarMenuItem("Home", tabName = "Home", icon = "home"),
+        bs4SidebarMenuItem("Time Series Visualization", tabName = "ExploratoryAnalysis_SimpleViz", icon = "search"),
+        bs4SidebarMenuItem("Forecast", tabName = "Forecast_Univariate", icon = "bolt")
     )
 )
 
@@ -79,7 +76,12 @@ footer <- bs4DashFooter(
 
 body <- bs4DashBody(
     bs4TabItems(
-        bs4TabItem(
+         bs4TabItem(
+            tabName = "Home",
+            h2("Solar Forecast")
+            
+         ),
+         bs4TabItem(
             tabName = "ExploratoryAnalysis_SimpleViz",
             fluidRow(
                 bs4Card(
@@ -317,7 +319,7 @@ server <- function(input, output, session) {
     output$Forecast_Univariate_Train_Output_LinePlots <- renderPlot({
         req(forecast_model())
         forecast_model()$forecast_data %>%
-            autoplot(forecast_model()$grouped_subset_tsbl)
+            autoplot(forecast_model()$grouped_subset_tsbl, colour = "red")
     })
     
     
