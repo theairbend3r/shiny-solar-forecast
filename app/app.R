@@ -110,8 +110,8 @@ body <- bs4DashBody(
                     selectizeInput("Forecast_Univariate_Input_Model", label = "Select Model", multiple = FALSE, selected = "Average", choices = c("Average", "Naive", "Seasonal Naive")),
                     selectInput("Forecast_Univariate_Input_ForecastGranularity", "Granularity", choices = c("Day", "Month", "Year")),
                     numericInput("Forecast_Univariate_Input_ForecastHorizon", "Forecast Horizon", value = 12, min = 0),
-                    dateRangeInput("Forecast_Univariate_Input_TrainDateRange", label = "Select Train Subset", autoclose = TRUE),
-                    dateRangeInput("Forecast_Univariate_Input_TestDateRange", label = "Select Test Subset", autoclose = TRUE),
+                    dateRangeInput("Forecast_Univariate_Input_UniverseDateRange", label = "Select Universe", autoclose = TRUE),
+                    dateInput("Forecast_Univariate_Input_TrainTestSplitDate", label = "Select Date for Train-Test Split", autoclose = TRUE),
                     
                     # dateRangeInput2("Forecast_Univariate_Input_TrainDateRange", "Select Train Subset", startview = "year", minview = "months", maxview = "decades"),
                     # dateRangeInput2("Forecast_Univariate_Input_TestDateRange", "Select Test Subset", startview = "year", minview = "months", maxview = "decades"),
@@ -203,7 +203,8 @@ server <- function(input, output, session) {
     #=============================================================
     
     updateSelectizeInput(session, "Forecast_Univariate_Input_TargetVariable", choices = names(solar_df)[-which(names(solar_df) %in% c("date_time", "id"))] )
-    updateDateRangeInput(session, "Forecast_Univariate_Input_TrainDateRange", start = min(solar_df$date_time), end = max(solar_df$date_time))
+    updateDateRangeInput(session, "Forecast_Univariate_Input_UniverseDateRange", min = min(solar_df$date_time), start = min(solar_df$date_time), max = max(solar_df$date_time), end = max(solar_df$date_time))
+    updateDateInput(session, "Forecast_Univariate_Input_TrainTestSplitDate", min = min(solar_df$date_time), max = max(solar_df$date_time), value = "2010-01-01")
     
     
     # solar_tsbl <- reactive({
@@ -216,9 +217,9 @@ server <- function(input, output, session) {
         print("SUBSETTING TSBL")
         
         subset_tsbl <- solar_tsbl %>%
-            filter_index(as.character(input$Forecast_Univariate_Input_TrainDateRange[1]) ~ as.character(input$Forecast_Univariate_Input_TestDateRange[2]))
+            filter_index(as.character(input$Forecast_Univariate_Input_UniverseDateRange[1]) ~ as.character(input$Forecast_Univariate_Input_TrainTestSplitDate))
         
-        if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") gs_tsbl<- subset_tsbl %>% index_by(datetime_day = as.Date(date_time)) %>% summarise_all(mean)
+        if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") gs_tsbl <- subset_tsbl %>% index_by(datetime_day = as.Date(date_time)) %>% summarise_all(mean)
         if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") gs_tsbl <- subset_tsbl %>% index_by(datetime_month = yearmonth(date_time)) %>% summarise_all(mean)
         if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") gs_tsbl <- subset_tsbl %>% index_by(datetime_year = year(date_time)) %>% summarise_all(mean)
 
@@ -227,19 +228,17 @@ server <- function(input, output, session) {
     
     
     train_subset_grouped_solar_tsbl <- reactive({
+        req(subset_grouped_solar_tsbl())
         
         if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") {
             train_set <- subset_grouped_solar_tsbl() %>%
-                filter(datetime_day >= input$Forecast_Univariate_Input_TrainDateRange[1]) %>% 
-                filter(datetime_day < input$Forecast_Univariate_Input_TrainDateRange[2]) 
+                filter(datetime_day < input$Forecast_Univariate_Input_TrainTestSplitDate) 
         } else if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") {
             train_set <- subset_grouped_solar_tsbl() %>%
-                filter(datetime_month >= input$Forecast_Univariate_Input_TrainDateRange[1]) %>% 
-                filter(datetime_month < input$Forecast_Univariate_Input_TrainDateRange[2]) 
+                filter(datetime_month < input$Forecast_Univariate_Input_TrainTestSplitDate) 
         } else if (input$Forecast_Univariate_Input_ForecastGranularity == "Year") {
             train_set <- subset_grouped_solar_tsbl() %>%
-                filter(datetime_year >= input$Forecast_Univariate_Input_TrainDateRange[1]) %>% 
-                filter(datetime_year < input$Forecast_Univariate_Input_TrainDateRange[2]) 
+                filter(datetime_year < input$Forecast_Univariate_Input_TrainTestSplitDate) 
         } else {
             stop("Invalid date time argument in univariate forecasting.")
         }
@@ -249,6 +248,7 @@ server <- function(input, output, session) {
     })
     
     forecast_model <- eventReactive(input$Forecast_Univariate_Button_Train, {
+        req(train_subset_grouped_solar_tsbl())
         print("Training the model1!!!!!")
         target_col <- input$Forecast_Univariate_Input_TargetVariable
         forecast_horizon <- input$Forecast_Univariate_Input_ForecastHorizon
@@ -290,7 +290,7 @@ server <- function(input, output, session) {
     output$Forecast_Univariate_Train_Output_Plots <- renderPlot({
         req(forecast_model())
         forecast_model()$forecast_data %>%
-            autoplot()
+            autoplot(subset_grouped_solar_tsbl())
 
     })
     
