@@ -38,8 +38,7 @@ sidebar <- bs4DashSidebar(
     opacity = 0.8,
     # bs4SidebarUserPanel(
     #     img = "https://image.flaticon.com/icons/svg/1149/1149168.svg",
-    #     # url = "https://github.com/theairbend3r/shiny-solar-forecast",
-    #     text = "About"
+    #     text = "@theairbender"
     # ),
     bs4SidebarMenu(
         bs4SidebarMenuItem("Home", tabName = "Home", icon = "home"),
@@ -82,7 +81,8 @@ body <- bs4DashBody(
                 width = 12, title = "Home", closable = FALSE, solidHeader = FALSE, maximizable = FALSE, elevation = TRUE, collapsible = FALSE,
                 h2("Solar Forecast"),
                 p("Exploration and Univariate Prediction of Solar Irradiance using Statistical Time Series Methods."),
-                p("The data was taken from a Solar Farm.")
+                p("The data was taken from a Solar Farm."),
+                div(img(src="solar_panel.jpg", width = "100%"))
             )
          ),
          bs4TabItem(
