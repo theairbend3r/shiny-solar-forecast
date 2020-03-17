@@ -78,8 +78,12 @@ body <- bs4DashBody(
     bs4TabItems(
          bs4TabItem(
             tabName = "Home",
-            h2("Solar Forecast")
-            
+            bs4Card(
+                width = 12, title = "Home", closable = FALSE, solidHeader = FALSE, maximizable = FALSE, elevation = TRUE, collapsible = FALSE,
+                h2("Solar Forecast"),
+                p("Exploration and Univariate Prediction of Solar Irradiance using Statistical Time Series Methods."),
+                p("The data was taken from a Solar Farm.")
+            )
          ),
          bs4TabItem(
             tabName = "ExploratoryAnalysis_SimpleViz",
@@ -161,8 +165,8 @@ ui <- bs4DashPage(
 ###################################################################
 server <- function(input, output, session) {
     
-    solar_df <- readRDS("../solar_df.rds")
-    solar_tsbl <- readRDS("../solar_tsbl.rds")
+    solar_df <- readRDS("solar_df.rds")
+    solar_tsbl <- readRDS("solar_tsbl.rds")
     
     #=============================================================
     #                 EXPLORATORY DATA ANALYSIS
