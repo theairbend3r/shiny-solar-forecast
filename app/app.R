@@ -157,7 +157,7 @@ server <- function(input, output, session) {
     # solar_df$date_time <- ymd_hms(solar_df$date_time)
     
     solar_df <- readRDS("../solar_df.rds")
-    solar_tsbl <- reactive({ readRDS("../solar_tsbl.rds") })
+    solar_tsbl <- readRDS("../solar_tsbl.rds")
     
     #=============================================================
     #                 EXPLORATORY DATA ANALYSIS
@@ -215,8 +215,8 @@ server <- function(input, output, session) {
     subset_grouped_solar_tsbl <- reactive({
         print("SUBSETTING TSBL")
         
-        subset_tsbl <- solar_tsbl() %>%
-            filter_index(as.character(input$Forecast_Univariate_Input_TrainDateRange[1]) ~ as.character(input$Forecast_Univariate_Input_TrainDateRange[2]))
+        subset_tsbl <- solar_tsbl %>%
+            filter_index(as.character(input$Forecast_Univariate_Input_TrainDateRange[1]) ~ as.character(input$Forecast_Univariate_Input_TestDateRange[2]))
         
         if (input$Forecast_Univariate_Input_ForecastGranularity == "Day") gs_tsbl<- subset_tsbl %>% index_by(datetime_day = as.Date(date_time)) %>% summarise_all(mean)
         if (input$Forecast_Univariate_Input_ForecastGranularity == "Month") gs_tsbl <- subset_tsbl %>% index_by(datetime_month = yearmonth(date_time)) %>% summarise_all(mean)
