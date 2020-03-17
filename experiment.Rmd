@@ -49,3 +49,9 @@ accuracy(mod)
 bind_rows(accuracy(mod), accuracy(fc, total))
 ```
 
+```{r}
+mod %>%
+  augment() %>%
+  autoplot(.resid)
+```
+

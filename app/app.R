@@ -97,7 +97,7 @@ body <- bs4DashBody(
             fluidRow(
                 bs4Card(
                     width = 12, title = "Dataframe", closable = FALSE, solidHeader = TRUE, maximizable = FALSE,
-                    DTOutput("ExploratoryAnalysis_SimpleViz_Output_DF")
+                    dataTableOutput("ExploratoryAnalysis_SimpleViz_Output_DF")
                 )
             )
         ),
@@ -119,13 +119,18 @@ body <- bs4DashBody(
                 ),
                 bs4TabCard(
                     id = "forecastOutput", width = 8, title = "Forecast Output", closable = FALSE, solidHeader = TRUE, maximizable  = TRUE,
-                    bs4TabPanel(tabName = "Plot", active = TRUE, addSpinner(plotOutput("Forecast_Univariate_Train_Output_Plots"))),
-                    bs4TabPanel(tabName = "Dataframe", active = FALSE, dataTableOutput("Forecast_Univariate_Train_Output_DF"))
+                    bs4TabPanel(tabName = "Plot", active = TRUE, addSpinner(plotOutput("Forecast_Univariate_Train_Output_LinePlots"))),
+                    bs4TabPanel(tabName = "Dataframe", active = FALSE, addSpinner(dataTableOutput("Forecast_Univariate_Train_Output_DF")))
                 )
             ),
             fluidRow(
-                bs4Card(width = 5, title = "Accuracy", closable = FALSE, solidHeader = TRUE, maximizable = FALSE, DTOutput("Forecast_Univariate_Output_Accuracy")),
-                bs4Card(width = 7, title = "Report", closable = FALSE, solidHeader = TRUE, maximizable = FALSE, DTOutput("Forecast_Univariate_Output_Report"))
+                bs4TabCard(
+                    id = "fittedDiagnosis", width = 12, title = "Model Diagnosis", closable = FALSE, solidHeader = TRUE, maximizable  = TRUE,
+                    bs4TabPanel(tabName = "Report", active = FALSE, addSpinner(dataTableOutput("Forecast_Univariate_Output_Report"))),
+                    bs4TabPanel(tabName = "Accuracy", active = TRUE, addSpinner(dataTableOutput("Forecast_Univariate_Output_Accuracy"))),
+                    bs4TabPanel(tabName = "Residuals", active = FALSE, addSpinner(plotOutput("Forecast_Univariate_Output_ResidualsLinePlot")), addSpinner(plotOutput("Forecast_Univariate_Output_ResidualsHistogramPlot"))),
+                    bs4TabPanel(tabName = "ACF", active = FALSE, addSpinner(plotOutput("Forecast_Univariate_Output_ACFPlot")))
+                )
             )
 
         )
@@ -261,6 +266,7 @@ server <- function(input, output, session) {
     
     
     
+    # Accuracy Table
     output$Forecast_Univariate_Output_Accuracy <- renderDataTable({
         req(forecast_model())
         train_acc <- accuracy(forecast_model()$trained_model)
@@ -270,19 +276,52 @@ server <- function(input, output, session) {
     }, options = list(scrollX = TRUE, pageLength = 5))
 
     
+    # Report Table
     output$Forecast_Univariate_Output_Report <- renderDataTable({
         req(forecast_model())
         forecast_model()$trained_model %>% augment()
     }, options = list(scrollX = TRUE, pageLength = 5))
     
     
-    output$Forecast_Univariate_Train_Output_Plots <- renderPlot({
+    # Residual Line Plot
+    output$Forecast_Univariate_Output_ResidualsLinePlot <- renderPlot({
+        req(forecast_model())
+        forecast_model()$trained_model %>% 
+            augment() %>%
+            autoplot(.resid, aes(colour=.resid)) + ggtitle("Residuals")
+    })
+    
+    
+    # Residual Histogram Plot
+    output$Forecast_Univariate_Output_ResidualsHistogramPlot <- renderPlot({
+        req(forecast_model())
+        forecast_model()$trained_model %>% 
+            augment() %>%
+            ggplot(mapping = aes(x = .resid)) + geom_histogram(fill="pink") + ggtitle("Histogram of Residuals")
+    })
+    
+    
+    # Residual ACF Plot
+    output$Forecast_Univariate_Output_ACFPlot <- renderPlot({
+        req(forecast_model())
+        forecast_model()$trained_model %>% 
+            augment() %>%
+            ACF(.resid) %>%
+            autoplot() + ggtitle("ACF of Residuals")
+    })
+    
+    
+    
+    
+    # Forecast Plot
+    output$Forecast_Univariate_Train_Output_LinePlots <- renderPlot({
         req(forecast_model())
         forecast_model()$forecast_data %>%
             autoplot(forecast_model()$grouped_subset_tsbl)
-
     })
     
+    
+    # Forecast DF
     output$Forecast_Univariate_Train_Output_DF <- renderDataTable({
         req(forecast_model())
         forecast_model()$forecast_data
