@@ -113,7 +113,7 @@ body <- bs4DashBody(
                 bs4Card(
                     width = 4, title = "Train Configuration", closable = FALSE, solidHeader = TRUE, maximizable = FALSE,
                     selectizeInput("Forecast_Univariate_Input_TargetVariable", label = "Select Target", multiple = FALSE, choices = c(" ")),
-                    selectizeInput("Forecast_Univariate_Input_Model", label = "Select Model", multiple = FALSE, selected = "Average", choices = c("Average", "Naive", "Seasonal Naive")),
+                    selectizeInput("Forecast_Univariate_Input_Model", label = "Select Model", multiple = FALSE, selected = "Average", choices = c("ARIMA", "NNETAR", "Seasonal Naive", "Average", "Naive")),
                     selectInput("Forecast_Univariate_Input_ForecastGranularity", "Granularity", choices = c("Day", "Month", "Year")),
                     numericInput("Forecast_Univariate_Input_ForecastHorizon", "Forecast Horizon", value = 12, min = 0),
                     dateRangeInput("Forecast_Univariate_Input_UniverseDateRange", label = "Select Universe", autoclose = TRUE),
@@ -257,6 +257,8 @@ server <- function(input, output, session) {
         if (input$Forecast_Univariate_Input_Model == "Average") model <- train_grouped_subset_tsbl %>% model(model_mean = MEAN(!! sym(target_col)))
         if (input$Forecast_Univariate_Input_Model == "Naive") model <- train_grouped_subset_tsbl %>% model(model_naive = NAIVE(!! sym(target_col)))
         if (input$Forecast_Univariate_Input_Model == "Seasonal Naive") model <- train_grouped_subset_tsbl %>% model(model_seasonalnaive = SNAIVE(!! sym(target_col)))
+        if (input$Forecast_Univariate_Input_Model == "ARIMA") model <- train_grouped_subset_tsbl %>% model(model_seasonalnaive = ARIMA(!! sym(target_col)))
+        if (input$Forecast_Univariate_Input_Model == "NNETAR") model <- train_grouped_subset_tsbl %>% model(model_seasonalnaive = NNETAR(!! sym(target_col)))
         
         # Forecast
         forecast_data <- model %>%
